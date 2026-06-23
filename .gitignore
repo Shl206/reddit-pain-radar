@@ -1,0 +1,13 @@
+.env
+*.env
+data/
+reports/
+*.sqlite
+*.db
+**pycache**/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+.DS_Store
+*.log
