@@ -1,0 +1,7 @@
+{
+  "base_delay_seconds": 10,
+  "jitter_min_seconds": 3,
+  "jitter_max_seconds": 8,
+  "max_retries": 3,
+  "retry_base_seconds": 30
+}
