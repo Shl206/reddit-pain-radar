@@ -119,6 +119,18 @@ V1 is usable when this loop works end to end:
 5. smoke test passes before commits.
 6. README points users to this operating loop.
 
+
+
+## Opportunity Lens
+
+V1.1 adds an opportunity lens to each scored lead:
+
+- `opportunity_type`: what kind of opportunity the signal may represent.
+- `validation_question`: the next question to test before building anything.
+- `next_action`: the immediate research action to take.
+
+Use this to avoid falling in love with vague pain points. A lead is only interesting if the next validation step is clear.
+
 ## Next Product Direction
 
 Do not add more memory commands until the daily loop has been used for several real days.

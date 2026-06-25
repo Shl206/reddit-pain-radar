@@ -95,6 +95,9 @@ class ScoredPost(TypedDict):
     idea_status: str
     my_note: str
     follow_up_query: str
+    opportunity_type: str
+    validation_question: str
+    next_action: str
 
 
 def score_entries(entries: list[RawEntry], pain_keywords: list[str]) -> list[ScoredPost]:
@@ -149,6 +152,9 @@ def exclude_duplicate_post(post: ScoredPost) -> ScoredPost:
         "idea_status": "none",
         "my_note": "",
         "follow_up_query": "",
+        "opportunity_type": "not_an_opportunity",
+        "validation_question": "Skip duplicate; inspect the original matching signal instead.",
+        "next_action": "ignore_duplicate",
     }
     return duplicate_post
 
@@ -187,6 +193,9 @@ def score_entry(entry: RawEntry, pain_keywords: list[str]) -> ScoredPost:
         "idea_status": "none",
         "my_note": "",
         "follow_up_query": "",
+        "opportunity_type": opportunity_type(categories, relevance, qualified),
+        "validation_question": validation_question(title, categories, relevance, qualified),
+        "next_action": next_action(categories, relevance, qualified),
     }
     return scored_post
 
@@ -286,6 +295,66 @@ def detect_language(text: str) -> Language:
     if non_ascii_ratio > 0.04 or contains_any(text, ("¿", "qué", "cómo", "para", "por qué")):
         return "non_english"
     return "english"
+
+
+def opportunity_type(categories: list[PainCategory], relevance: FounderRelevance, qualified: bool) -> str:
+    if not qualified:
+        return "not_an_opportunity"
+    if "tool_request" in categories or "workflow_pain" in categories:
+        return "automation_or_workflow_tool"
+    if "compliance_pain" in categories:
+        return "compliance_or_admin_helper"
+    if "technical_failure" in categories:
+        return "technical_debugging_tool"
+    if "staffing_pain" in categories:
+        return "staffing_or_ops_process"
+    if "money_pain" in categories:
+        return "pricing_or_cost_reduction_angle"
+    if "confusion_pain" in categories:
+        return "education_or_decision_support"
+    if relevance == "high":
+        return "research_first_opportunity"
+    return "watchlist_theme"
+
+
+def validation_question(
+    title: str,
+    categories: list[PainCategory],
+    relevance: FounderRelevance,
+    qualified: bool,
+) -> str:
+    clean_title: str = title.strip().rstrip("?")
+    if not qualified:
+        return "Does this weak signal repeat across multiple posts or communities?"
+    if "tool_request" in categories:
+        return f"Are people already searching for a tool to solve: {clean_title}?"
+    if "workflow_pain" in categories:
+        return f"What manual workaround are people using today for: {clean_title}?"
+    if "compliance_pain" in categories:
+        return f"Is this painful because of time, money, risk, or regulation: {clean_title}?"
+    if "technical_failure" in categories:
+        return f"Is this a repeated technical failure with an urgent workaround need: {clean_title}?"
+    if "staffing_pain" in categories:
+        return f"Is the real buyer an owner, manager, or operator behind this staffing pain: {clean_title}?"
+    if "money_pain" in categories:
+        return f"Would users switch, downgrade, or pay for a cheaper alternative to solve: {clean_title}?"
+    if relevance == "high":
+        return f"Who has this pain repeatedly, and what do they do before giving up: {clean_title}?"
+    return f"Can this theme be found three more times in nearby communities: {clean_title}?"
+
+
+def next_action(categories: list[PainCategory], relevance: FounderRelevance, qualified: bool) -> str:
+    if not qualified:
+        return "watch_for_repetition"
+    if relevance == "high":
+        return "open_thread_and_collect_workarounds"
+    if "tool_request" in categories or "workflow_pain" in categories:
+        return "search_existing_tools_and_gaps"
+    if "money_pain" in categories:
+        return "compare_current_pricing_and_switching_pain"
+    if "confusion_pain" in categories:
+        return "map_decision_steps_and_missing_explanation"
+    return "save_for_weekly_pattern_review"
 
 
 def why_it_matters(categories: list[PainCategory], relevance: FounderRelevance, qualified: bool) -> str:
