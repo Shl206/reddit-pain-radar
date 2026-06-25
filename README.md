@@ -164,7 +164,7 @@ Memory search ranks `gold` first, `approved` next, and `pending_review` lower. R
 
 
 
-V0.5 adds a Memory Review Queue so pending memories can be reviewed before they pollute future retrieval:
+V0.5 adds a Memory Review Queue so pending memories can be reviewed before they pollute future retrieval. V0.6 adds queue filters with --limit and --status:
 
 ```powershell
 .\.venv\Scripts\python pain_radar.py --memory-review-queue
@@ -185,3 +185,4 @@ Reddit may return `429 Too Many Requests` even for public RSS feeds. The tool is
 - Reuses cached RSS for 6 hours to avoid unnecessary requests.
 
 Recommended use: run this 1-2 times per day, not every few minutes.
+
