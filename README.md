@@ -191,6 +191,18 @@ V0.9 adds a local smoke test script so the core loop can be checked before every
 
 The smoke test avoids a live Reddit fetch. It checks Python compilation, memory stats, memory health, review queue output, and memory search.
 
+
+
+## V1 Operating Loop
+
+This project now has a stable V1 operating loop for daily use, memory review, health checks, and pre-commit smoke testing:
+
+```text
+docs/operating_loop.md
+```
+
+Use this as the source of truth for running Reddit Pain Radar as a personal research operating system.
+
 ## Notes
 
 Reddit may return `429 Too Many Requests` even for public RSS feeds. The tool is intentionally slow and cache-aware:
