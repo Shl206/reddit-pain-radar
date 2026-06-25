@@ -48,6 +48,7 @@ CommandMode = Literal[
     "memory_stats",
     "memory_review",
     "memory_review_queue",
+    "memory_health",
 ]
 
 
@@ -88,7 +89,7 @@ def main(argv: list[str]) -> int:
     if parsed_command is None:
         print(
             "Invalid command. Use no options, --weekly, --memory-search, --memory-feedback, "
-            "--memory-impact, --memory-stats, --memory-review, or --memory-review-queue.",
+            "--memory-impact, --memory-stats, --memory-review, --memory-review-queue, or --memory-health.",
             file=sys.stderr,
         )
         return 2
@@ -121,6 +122,9 @@ def main(argv: list[str]) -> int:
     if parsed_command["mode"] == "memory_stats":
         print_memory_stats()
         return 0
+    if parsed_command["mode"] == "memory_health":
+        print_memory_health()
+        return 0
     if parsed_command["mode"] == "memory_review_queue":
         print_memory_review_queue(parsed_command["review_queue_status"], parsed_command["review_queue_limit"])
         return 0
@@ -144,6 +148,8 @@ def parse_command(argv: list[str]) -> ParsedCommand | None:
         return empty_command("weekly")
     if argv == ["--memory-stats"]:
         return empty_command("memory_stats")
+    if argv == ["--memory-health"]:
+        return empty_command("memory_health")
     if argv and argv[0] == "--memory-review-queue":
         return parse_review_queue_command(argv)
     if len(argv) in (2, 3) and argv[0] == "--memory-search":
@@ -555,6 +561,87 @@ def reusable_memory_pattern(scored_posts: list[ScoredPost]) -> str:
         categories: str = ", ".join(sorted(set(category_values)))
         return f"RSS scan plus V0.2 quality gate found high relevance leads around: {categories}."
     return "RSS scan found few high relevance leads; refine subreddit list or strong pain patterns before repeating."
+
+
+def print_memory_health() -> None:
+    stats: dict[str, Any] = memory_stats()
+    status_counts: dict[str, int] = stats["memory_status_counts"]
+    total: int = int(stats["total_memories"])
+    pending: int = int(status_counts["pending_review"])
+    approved: int = int(status_counts["approved"])
+    rejected: int = int(status_counts["rejected"])
+    gold: int = int(status_counts["gold"])
+    reviewed: int = approved + rejected + gold
+    pending_ratio: float = safe_ratio(pending, total)
+    reviewed_ratio: float = safe_ratio(reviewed, total)
+    gold_ratio: float = safe_ratio(gold, total)
+    health_score: int = memory_health_score(total, pending_ratio, reviewed_ratio, gold_ratio, stats["average_memory_rating"])
+
+    print("Agent memory health")
+    print(f"- Health score: {health_score}/100")
+    print(f"- Total memories: {total}")
+    print(f"- Reviewed memories: {reviewed} ({reviewed_ratio:.0%})")
+    print(f"- Pending review: {pending} ({pending_ratio:.0%})")
+    print(f"- Approved: {approved}")
+    print(f"- Gold: {gold} ({gold_ratio:.0%})")
+    print(f"- Rejected: {rejected}")
+    print(f"- Impact records: {stats['total_impact_records']}")
+    average_rating: Any = stats["average_memory_rating"]
+    average_text: str = "none" if average_rating is None else f"{float(average_rating):.2f}"
+    print(f"- Average impact rating: {average_text}")
+    print("- Diagnosis:")
+    for line in memory_health_diagnosis(total, pending, reviewed, gold, rejected, average_rating):
+        print(f"  - {line}")
+
+
+def safe_ratio(value: int, total: int) -> float:
+    if total <= 0:
+        return 0.0
+    return value / total
+
+
+def memory_health_score(
+    total: int,
+    pending_ratio: float,
+    reviewed_ratio: float,
+    gold_ratio: float,
+    average_rating: Any,
+) -> int:
+    if total == 0:
+        return 0
+    score: int = 50
+    score = score + int(reviewed_ratio * 30)
+    score = score + int(gold_ratio * 15)
+    score = score - int(pending_ratio * 25)
+    if isinstance(average_rating, int | float):
+        score = score + int(max(min(float(average_rating), 10.0), 0.0))
+    return max(0, min(score, 100))
+
+
+def memory_health_diagnosis(
+    total: int,
+    pending: int,
+    reviewed: int,
+    gold: int,
+    rejected: int,
+    average_rating: Any,
+) -> list[str]:
+    if total == 0:
+        return ["No memories yet. Run the daily radar first, then review generated memories."]
+    diagnosis: list[str] = []
+    if pending > reviewed:
+        diagnosis.append("Review backlog is high. Run --memory-review-queue and approve, gold, or reject old memories.")
+    else:
+        diagnosis.append("Review backlog is under control.")
+    if gold == 0:
+        diagnosis.append("No gold memories yet. Promote only the strongest reusable patterns to gold.")
+    else:
+        diagnosis.append("Gold memory exists. Search ranking has at least one high-priority reusable pattern.")
+    if rejected == 0 and total >= 5:
+        diagnosis.append("No rejected memories. Be stricter or weak memory will pollute retrieval.")
+    if average_rating is None:
+        diagnosis.append("No impact ratings yet. Use --memory-impact after memory-assisted runs.")
+    return diagnosis
 
 
 def print_memory_review_queue(status: str, limit: int) -> None:
