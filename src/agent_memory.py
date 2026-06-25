@@ -277,12 +277,18 @@ def load_memory_impact(limit: int = 20) -> list[MemoryImpact]:
     return rows[-limit:]
 
 
-def memory_review_queue(limit: int = 20) -> list[Trajectory]:
+def memory_review_queue(limit: int = 20, status: str = "pending_review") -> list[Trajectory]:
+    if limit < 1:
+        return []
+    if status not in {"pending_review", "approved", "rejected", "gold", "all"}:
+        raise ValueError("status must be pending_review, approved, rejected, gold, or all")
     memories: list[Trajectory] = load_recent_memories(limit=100000)
-    pending_memories: list[Trajectory] = [
-        memory for memory in memories if memory["memory_status"] == "pending_review"
+    if status == "all":
+        return memories[:limit]
+    filtered_memories: list[Trajectory] = [
+        memory for memory in memories if memory["memory_status"] == status
     ]
-    return pending_memories[:limit]
+    return filtered_memories[:limit]
 
 
 def memory_stats() -> dict[str, Any]:

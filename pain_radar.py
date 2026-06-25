@@ -79,6 +79,8 @@ class ParsedCommand(TypedDict):
     review_status: str
     review_tags: list[str]
     review_reason: str | None
+    review_queue_status: str
+    review_queue_limit: int
 
 
 def main(argv: list[str]) -> int:
@@ -120,7 +122,7 @@ def main(argv: list[str]) -> int:
         print_memory_stats()
         return 0
     if parsed_command["mode"] == "memory_review_queue":
-        print_memory_review_queue()
+        print_memory_review_queue(parsed_command["review_queue_status"], parsed_command["review_queue_limit"])
         return 0
     if parsed_command["mode"] == "memory_review":
         review_path: Path = update_memory_review(
@@ -142,8 +144,8 @@ def parse_command(argv: list[str]) -> ParsedCommand | None:
         return empty_command("weekly")
     if argv == ["--memory-stats"]:
         return empty_command("memory_stats")
-    if argv == ["--memory-review-queue"]:
-        return empty_command("memory_review_queue")
+    if argv and argv[0] == "--memory-review-queue":
+        return parse_review_queue_command(argv)
     if len(argv) in (2, 3) and argv[0] == "--memory-search":
         command: ParsedCommand = empty_command("memory_search")
         command["memory_query"] = argv[1]
@@ -186,6 +188,8 @@ def empty_command(mode: CommandMode) -> ParsedCommand:
         "review_status": "pending_review",
         "review_tags": [],
         "review_reason": None,
+        "review_queue_status": "pending_review",
+        "review_queue_limit": 20,
     }
     return command
 
@@ -206,6 +210,32 @@ def parse_daily_options(argv: list[str]) -> ParsedCommand | None:
             index = index + 2
             continue
         return None
+    return command
+
+
+def parse_review_queue_command(argv: list[str]) -> ParsedCommand | None:
+    command: ParsedCommand = empty_command("memory_review_queue")
+    index: int = 1
+    while index < len(argv):
+        option: str = argv[index]
+        if index + 1 >= len(argv):
+            return None
+        value: str = argv[index + 1]
+        if option == "--limit":
+            try:
+                limit: int = int(value)
+            except ValueError:
+                return None
+            if limit < 1 or limit > 100:
+                return None
+            command["review_queue_limit"] = limit
+        elif option == "--status":
+            if value not in {"pending_review", "approved", "rejected", "gold", "all"}:
+                return None
+            command["review_queue_status"] = value
+        else:
+            return None
+        index = index + 2
     return command
 
 
@@ -527,11 +557,11 @@ def reusable_memory_pattern(scored_posts: list[ScoredPost]) -> str:
     return "RSS scan found few high relevance leads; refine subreddit list or strong pain patterns before repeating."
 
 
-def print_memory_review_queue() -> None:
-    queue: list[Trajectory] = memory_review_queue(limit=20)
-    print("Agent memory review queue")
+def print_memory_review_queue(status: str, limit: int) -> None:
+    queue: list[Trajectory] = memory_review_queue(limit=limit, status=status)
+    print(f"Agent memory review queue status={status} limit={limit}")
     if not queue:
-        print("- No pending_review memories found.")
+        print(f"- No memories found for status={status}.")
         return
     for index, trajectory in enumerate(queue, start=1):
         tags: str = ", ".join(trajectory["quality_tags"]) if trajectory["quality_tags"] else "none"

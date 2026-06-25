@@ -168,6 +168,9 @@ V0.5 adds a Memory Review Queue so pending memories can be reviewed before they 
 
 ```powershell
 .\.venv\Scripts\python pain_radar.py --memory-review-queue
+.\.venv\Scripts\python pain_radar.py --memory-review-queue --limit 5
+.\.venv\Scripts\python pain_radar.py --memory-review-queue --status gold
+.\.venv\Scripts\python pain_radar.py --memory-review-queue --status all --limit 20
 ```
 
 ## Notes
