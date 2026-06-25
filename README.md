@@ -181,6 +181,16 @@ V0.8 adds a Memory Health Report to show whether the memory system is becoming u
 .\.venv\Scripts\python pain_radar.py --memory-health
 ```
 
+
+
+V0.9 adds a local smoke test script so the core loop can be checked before every commit:
+
+```powershell
+.\scripts\smoke_test.ps1
+```
+
+The smoke test avoids a live Reddit fetch. It checks Python compilation, memory stats, memory health, review queue output, and memory search.
+
 ## Notes
 
 Reddit may return `429 Too Many Requests` even for public RSS feeds. The tool is intentionally slow and cache-aware:
