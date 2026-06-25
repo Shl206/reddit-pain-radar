@@ -569,10 +569,20 @@ def print_memory_review_queue(status: str, limit: int) -> None:
         print(f"   - Goal: {trajectory['task_goal']}")
         print(f"   - Pattern: {trajectory['reusable_pattern']}")
         print(f"   - Tags: {tags}")
-        print(
-            f"   - Review command: python pain_radar.py --memory-review {trajectory['run_id']} "
-            '--status approved --tag useful --reason "Useful reusable research pattern"'
-        )
+        print("   - Review commands:")
+        for command_label, command_text in memory_review_commands(trajectory).items():
+            print(f"     - {command_label}: {command_text}")
+
+
+def memory_review_commands(trajectory: Trajectory) -> dict[str, str]:
+    run_id: str = trajectory["run_id"]
+    base: str = f"python pain_radar.py --memory-review {run_id}"
+    commands: dict[str, str] = {
+        "approve": f'{base} --status approved --tag useful --reason "Useful reusable research pattern"',
+        "gold": f'{base} --status gold --tag high_signal --reason "High-value pattern worth prioritizing in future retrieval"',
+        "reject": f'{base} --status rejected --reason "Low signal or not reusable"',
+    }
+    return commands
 
 
 def print_memory_search_results(query: str, include_rejected: bool) -> None:

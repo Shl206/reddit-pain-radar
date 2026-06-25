@@ -164,7 +164,7 @@ Memory search ranks `gold` first, `approved` next, and `pending_review` lower. R
 
 
 
-V0.5 adds a Memory Review Queue so pending memories can be reviewed before they pollute future retrieval. V0.6 adds queue filters with --limit and --status:
+V0.5 adds a Memory Review Queue so pending memories can be reviewed before they pollute future retrieval. V0.6 adds queue filters with `--limit` and `--status`. V0.7 expands the queue output with ready-to-copy approve, gold, and reject review commands:
 
 ```powershell
 .\.venv\Scripts\python pain_radar.py --memory-review-queue
