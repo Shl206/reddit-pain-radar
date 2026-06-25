@@ -277,6 +277,14 @@ def load_memory_impact(limit: int = 20) -> list[MemoryImpact]:
     return rows[-limit:]
 
 
+def memory_review_queue(limit: int = 20) -> list[Trajectory]:
+    memories: list[Trajectory] = load_recent_memories(limit=100000)
+    pending_memories: list[Trajectory] = [
+        memory for memory in memories if memory["memory_status"] == "pending_review"
+    ]
+    return pending_memories[:limit]
+
+
 def memory_stats() -> dict[str, Any]:
     ensure_memory_dirs()
     trajectories: list[Trajectory] = load_recent_memories(limit=100000)

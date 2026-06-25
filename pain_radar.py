@@ -12,6 +12,7 @@ from src.agent_memory import (
     append_memory_impact,
     build_memory_context,
     load_recent_memories,
+    memory_review_queue,
     memory_stats,
     save_trajectory,
     search_memory,
@@ -46,6 +47,7 @@ CommandMode = Literal[
     "memory_impact",
     "memory_stats",
     "memory_review",
+    "memory_review_queue",
 ]
 
 
@@ -84,7 +86,7 @@ def main(argv: list[str]) -> int:
     if parsed_command is None:
         print(
             "Invalid command. Use no options, --weekly, --memory-search, --memory-feedback, "
-            "--memory-impact, --memory-stats, or --memory-review.",
+            "--memory-impact, --memory-stats, --memory-review, or --memory-review-queue.",
             file=sys.stderr,
         )
         return 2
@@ -117,6 +119,9 @@ def main(argv: list[str]) -> int:
     if parsed_command["mode"] == "memory_stats":
         print_memory_stats()
         return 0
+    if parsed_command["mode"] == "memory_review_queue":
+        print_memory_review_queue()
+        return 0
     if parsed_command["mode"] == "memory_review":
         review_path: Path = update_memory_review(
             parsed_command["review_run_id"],
@@ -137,6 +142,8 @@ def parse_command(argv: list[str]) -> ParsedCommand | None:
         return empty_command("weekly")
     if argv == ["--memory-stats"]:
         return empty_command("memory_stats")
+    if argv == ["--memory-review-queue"]:
+        return empty_command("memory_review_queue")
     if len(argv) in (2, 3) and argv[0] == "--memory-search":
         command: ParsedCommand = empty_command("memory_search")
         command["memory_query"] = argv[1]
@@ -518,6 +525,24 @@ def reusable_memory_pattern(scored_posts: list[ScoredPost]) -> str:
         categories: str = ", ".join(sorted(set(category_values)))
         return f"RSS scan plus V0.2 quality gate found high relevance leads around: {categories}."
     return "RSS scan found few high relevance leads; refine subreddit list or strong pain patterns before repeating."
+
+
+def print_memory_review_queue() -> None:
+    queue: list[Trajectory] = memory_review_queue(limit=20)
+    print("Agent memory review queue")
+    if not queue:
+        print("- No pending_review memories found.")
+        return
+    for index, trajectory in enumerate(queue, start=1):
+        tags: str = ", ".join(trajectory["quality_tags"]) if trajectory["quality_tags"] else "none"
+        print(f"{index}. {trajectory['date']} {trajectory['run_id']} status={trajectory['memory_status']}")
+        print(f"   - Goal: {trajectory['task_goal']}")
+        print(f"   - Pattern: {trajectory['reusable_pattern']}")
+        print(f"   - Tags: {tags}")
+        print(
+            f"   - Review command: python pain_radar.py --memory-review {trajectory['run_id']} "
+            '--status approved --tag useful --reason "Useful reusable research pattern"'
+        )
 
 
 def print_memory_search_results(query: str, include_rejected: bool) -> None:

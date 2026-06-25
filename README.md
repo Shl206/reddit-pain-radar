@@ -162,6 +162,14 @@ Memory search ranks `gold` first, `approved` next, and `pending_review` lower. R
 .\.venv\Scripts\python pain_radar.py --memory-search "restaurant automation" --include-rejected-memory
 ```
 
+
+
+V0.5 adds a Memory Review Queue so pending memories can be reviewed before they pollute future retrieval:
+
+```powershell
+.\.venv\Scripts\python pain_radar.py --memory-review-queue
+```
+
 ## Notes
 
 Reddit may return `429 Too Many Requests` even for public RSS feeds. The tool is intentionally slow and cache-aware:
